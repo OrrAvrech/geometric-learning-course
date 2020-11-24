@@ -1,0 +1,7 @@
+.ipynb_checkpoints
+Pipfile*
+example_off_files/
+.vscode
+*.off
+*.ipynb
+.idea
