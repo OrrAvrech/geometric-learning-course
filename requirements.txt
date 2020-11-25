@@ -4,3 +4,4 @@ jupyterlab
 meshio[all]
 pyvista
 matplotlib
+imageio
