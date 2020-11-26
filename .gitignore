@@ -5,3 +5,4 @@ example_off_files/
 *.off
 *.ipynb
 .idea
+__pycache__
