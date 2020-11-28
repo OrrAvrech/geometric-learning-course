@@ -1,5 +1,5 @@
 from scipy.sparse import coo_matrix
-from utils import read_off
+from q1.utils import read_off
 import numpy as np
 
 

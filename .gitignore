@@ -6,3 +6,4 @@ example_off_files/
 *.ipynb
 .idea
 __pycache__
+*.png
