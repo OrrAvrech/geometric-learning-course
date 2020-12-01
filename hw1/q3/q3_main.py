@@ -45,17 +45,19 @@ def main():
     x, y = range(height), range(width)
     xx, yy = np.meshgrid(x, y)
     img_to_show = (255. * img_pad).astype('uint8')
+    num_iter = 30
 
     # Section (b): explicit form
     img_grid = pv.StructuredGrid(xx, yy, img_to_show)
     plotter = pv.Plotter()
     plotter.add_mesh(img_grid, scalars=np.transpose(img_to_show).ravel())
+    print('Orient the view, then press "q" to close window and produce GIF')
     plotter.show(auto_close=False)
     plotter.open_gif('surface_explicit.gif')
     pts = img_grid.points.copy()
     curr_img = img_pad.copy()
     images_in_time = []
-    for _ in range(30):
+    for _ in range(num_iter):
         next_img = update_image(curr_img, dt=0.1)
         next_img_to_show = (255. * next_img).astype('uint8')
         pts[:, -1] = np.transpose(next_img_to_show).ravel()
@@ -70,15 +72,14 @@ def main():
 
     # Section (b): heat kernel
     f_img = get_fourier_transform(img_pad)
-    t = np.linspace(0, 0.01, 30)
-    # gaussian = create_heat_kernel(xx, yy, t)
+    t = np.linspace(0, 0.01, num_iter)
     center_x, center_y = np.shape(img_pad) * np.array([0.5, 0.5])
     a = np.array(range(height)) - int(center_x)
     b = np.array(range(width)) - int(center_y)
     xx, yy = np.meshgrid(a, b)
     f_gaussian = create_heat_kernel(xx, yy, t)
     f_sol = np.multiply(f_img, f_gaussian)
-    sol = get_inverse_fourier_transform(f_sol)
+    sol = get_inverse_fourier_transform(f_sol)[num_iter//2:]
     imageio.mimsave('image_heat_kernel.gif', sol, duration=0.5)
 
 

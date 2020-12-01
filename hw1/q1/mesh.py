@@ -114,7 +114,7 @@ class Mesh:
         wireframe_plotter.add_mesh(obj, style='wireframe')
         return wireframe_plotter
 
-    def render_pointcloud(self, scalar_func, centroid):
+    def render_pointcloud(self, scalar_func, centroid=False):
         obj = numpy_to_pyvista(self.v, self.f)
         point_cloud_plotter = pv.Plotter()
         point_cloud_plotter.add_mesh(obj, style='points', scalars=scalar_func,
