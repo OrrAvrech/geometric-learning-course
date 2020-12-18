@@ -7,3 +7,4 @@ example_off_files/
 .idea
 __pycache__
 *.png
+*.pdf
