@@ -1,5 +1,5 @@
 from scipy import sparse
-from sklearn.neighbors import NearestNeighbors, kneighbors_graph
+from sklearn.neighbors import kneighbors_graph
 from sklearn.utils.graph_shortest_path import graph_shortest_path
 import numpy as np
 
@@ -50,17 +50,4 @@ def isomap(z, n_dim, n_neighbor=None):
     eigen_values, eigen_vectors = eigen_values[idx], eigen_vectors[:, idx]
     eigen_values, eigen_vectors = eigen_values[:n_dim], eigen_vectors[:, :n_dim]
     embedding = np.dot(eigen_vectors, np.diag(eigen_values**(1/2)))
-    return embedding
-
-
-def locally_linear_embedding(z, n_dim, n_neighbor=None):
-    num_samples, num_features = z.shape
-    knn = NearestNeighbors(n_neighbors=n_neighbor).fit(z)
-    neighbors_indices = knn.kneighbors(z, return_distance=False)
-    iw = (sparse.eye(num_samples) - adj_mat)
-    b = iw.T.dot(iw)
-    eigen_values, eigen_vectors = np.linalg.eigh(b.toarray())
-    idx = eigen_values.argsort()
-    eigen_values, eigen_vectors = eigen_values[idx], eigen_vectors[:, idx]
-    embedding = eigen_vectors[:, :n_dim]
     return embedding
