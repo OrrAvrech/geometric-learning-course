@@ -1,5 +1,6 @@
-from scipy.sparse import csr_matrix, identity
-from q1.utils import read_off, numpy_to_pyvista
+from scipy.sparse import csr_matrix, identity, diags
+from scipy.sparse.linalg import eigsh
+from q2.utils import read_mesh, numpy_to_pyvista
 import numpy as np
 import pyvista as pv
 from numpy.linalg import norm
@@ -9,7 +10,7 @@ class Mesh:
 
     def __init__(self, filepath):
 
-        self.v, self.f = read_off(filepath)
+        self.v, self.f = read_mesh(filepath)
 
     def vertex_face_adjacency(self):
         num_vertices = self.v.shape[0]
@@ -29,8 +30,8 @@ class Mesh:
         vv_adj = (vv_mat - identity(len(self.v))).astype(bool)
         return vv_adj
 
-    def vertex_degree(self):
-        vv_adj = self.vertex_vertex_adjacency()
+    def vertex_degree(self, cls):
+        vv_adj = self.weighted_adjacency(cls=cls)
         v_degree = np.sum(vv_adj.toarray(), axis=0)
         return v_degree
 
@@ -146,3 +147,76 @@ class Mesh:
         centers = self.v
         plotter.add_arrows(centers, vn)
         return plotter
+
+    @staticmethod
+    def cotangent_matrix(v, f):
+        # num_vertices = v.shape[0]
+        # a = v[f[:, 0], :]
+        # b = v[f[:, 1], :]
+        # c = v[f[:, 2], :]
+        # dot_prod = np.array([np.sum((b - a) * (c - a), axis=1),
+        #                      np.sum((a - b) * (c - b), axis=1),
+        #                      np.sum((a - c) * (b - c), axis=1)])
+        # cross_prod_norm = np.array([np.linalg.norm(np.cross(b - a, c - a), axis=1),
+        #                             np.linalg.norm(np.cross(a - b, c - b), axis=1),
+        #                             np.linalg.norm(np.cross(a - c, b - c), axis=1)])
+        # # cot equals cos/sin
+        # cotangent = (dot_prod / cross_prod_norm).flatten()
+        # vertex_indices_i = np.array([f[:, 1], f[:, 2], f[:, 0]]).flatten()
+        # vertex_indices_j = np.array([f[:, 2], f[:, 0], f[:, 1]]).flatten()
+        # # the cotangent matrix is symmetric
+        # data = 0.5 * np.concatenate((cotangent, cotangent))
+        # rows = np.concatenate((vertex_indices_i, vertex_indices_j))
+        # cols = np.concatenate((vertex_indices_j, vertex_indices_i))
+        # cot_mat = csr_matrix((data, (rows, cols)), shape=(num_vertices, num_vertices))
+        # return cot_mat
+        num_vertices = v.shape[0]
+        weights = np.empty(0)
+        rows = np.empty(0).astype('int')
+        cols = np.empty(0).astype('int')
+        edge_idx = np.arange(3)
+        for e1, e2, e3 in [edge_idx, np.roll(edge_idx, 1), np.roll(edge_idx, 2)]:
+            a = v[f[:, e1], :]
+            b = v[f[:, e2], :]
+            c = v[f[:, e3], :]
+            u = b - a
+            v = c - a
+            cot = np.sum(u * v, axis=1) / np.linalg.norm(np.cross(u, v), axis=1)
+            weights = np.append(weights, 0.5 * cot)
+            rows = np.append(rows, f[:, e2])
+            cols = np.append(cols, f[:, e3])
+            weights = np.append(weights, 0.5 * cot)
+            rows = np.append(rows, f[:, e3])
+            cols = np.append(cols, f[:, e2])
+        cot_mat = csr_matrix((weights, (rows, cols)), shape=(num_vertices, num_vertices))
+        return cot_mat
+
+    def weighted_adjacency(self, cls='half_cotangent'):
+        if cls == 'half_cotangent':
+            weights_mat = self.cotangent_matrix(self.v, self.f)
+        elif cls == 'uniform':
+            weights_mat = self.vertex_vertex_adjacency().astype('int')
+        else:
+            raise ValueError("cls options are {half_cotangent, uniform}")
+        return weights_mat
+
+    def laplacian(self, cls='half_cotangent'):
+        weighted_adj_mat = self.weighted_adjacency(cls=cls)
+        degree_vec = self.vertex_degree(cls=cls)
+        degree_mat = diags(degree_vec)
+        laplacian_mat = degree_mat - weighted_adj_mat
+        return laplacian_mat
+
+    def barycenter_vertex_mass_matrix(self):
+        barycentric_vertex_areas_vec = self.get_barycentric_vertex_areas()
+        barycentric_vertex_areas_mat = diags(barycentric_vertex_areas_vec)
+        return barycentric_vertex_areas_mat
+
+    def laplacian_spectrum(self, k, cls):
+        L = self.laplacian(cls=cls)
+        M = self.barycenter_vertex_mass_matrix().astype(L.dtype)
+        eig_val, eig_vec = eigsh(L, k, M, which='LM', sigma=0, tol=1e-7)
+        # round to 12 decimal places
+        eig_val = np.round(eig_val, decimals=12)
+        eig_vec = np.round(eig_vec, decimals=12)
+        return eig_val, eig_vec

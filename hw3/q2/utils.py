@@ -11,12 +11,6 @@ def read_mesh(filepath):
     return v, f
 
 
-def write_off(data, save_path):
-    points = data[0]
-    cells = [("triangle", data[1])]
-    meshio.write_points_cells(save_path, points, cells)
-
-
 def numpy_to_pyvista(v, f=None):
     if f is None:
         return pv.PolyData(v)
