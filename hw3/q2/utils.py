@@ -1,6 +1,7 @@
 import meshio
 import numpy as np
 import pyvista as pv
+import matplotlib.pyplot as plt
 
 
 def read_mesh(filepath):
@@ -17,3 +18,10 @@ def numpy_to_pyvista(v, f=None):
     else:
         return pv.PolyData(v, np.concatenate((np.full(
             (f.shape[0], 1), 3), f), 1))
+
+
+def save_fig(img, file_path):
+    plt.imshow(img)
+    plt.axis('off')
+    plt.show()
+    plt.savefig(file_path)

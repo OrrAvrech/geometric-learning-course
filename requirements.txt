@@ -6,3 +6,4 @@ pyvista
 matplotlib
 imageio
 scikit-learn
+tvb-gdist

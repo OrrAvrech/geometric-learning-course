@@ -128,8 +128,9 @@ class Mesh:
 
     def render_surface(self, scalar_func):
         obj = numpy_to_pyvista(self.v, self.f)
+        pv.set_plot_theme('document')
         surf_plotter = pv.Plotter()
-        surf_plotter.add_mesh(obj, scalars=scalar_func)
+        surf_plotter.add_mesh(obj, scalars=scalar_func, cmap='jet')
         return surf_plotter
 
     def viz_face_normals(self, normalized, plotter=None):
@@ -150,45 +151,25 @@ class Mesh:
 
     @staticmethod
     def cotangent_matrix(v, f):
-        # num_vertices = v.shape[0]
-        # a = v[f[:, 0], :]
-        # b = v[f[:, 1], :]
-        # c = v[f[:, 2], :]
-        # dot_prod = np.array([np.sum((b - a) * (c - a), axis=1),
-        #                      np.sum((a - b) * (c - b), axis=1),
-        #                      np.sum((a - c) * (b - c), axis=1)])
-        # cross_prod_norm = np.array([np.linalg.norm(np.cross(b - a, c - a), axis=1),
-        #                             np.linalg.norm(np.cross(a - b, c - b), axis=1),
-        #                             np.linalg.norm(np.cross(a - c, b - c), axis=1)])
-        # # cot equals cos/sin
-        # cotangent = (dot_prod / cross_prod_norm).flatten()
-        # vertex_indices_i = np.array([f[:, 1], f[:, 2], f[:, 0]]).flatten()
-        # vertex_indices_j = np.array([f[:, 2], f[:, 0], f[:, 1]]).flatten()
-        # # the cotangent matrix is symmetric
-        # data = 0.5 * np.concatenate((cotangent, cotangent))
-        # rows = np.concatenate((vertex_indices_i, vertex_indices_j))
-        # cols = np.concatenate((vertex_indices_j, vertex_indices_i))
-        # cot_mat = csr_matrix((data, (rows, cols)), shape=(num_vertices, num_vertices))
-        # return cot_mat
         num_vertices = v.shape[0]
-        weights = np.empty(0)
-        rows = np.empty(0).astype('int')
-        cols = np.empty(0).astype('int')
-        edge_idx = np.arange(3)
-        for e1, e2, e3 in [edge_idx, np.roll(edge_idx, 1), np.roll(edge_idx, 2)]:
-            a = v[f[:, e1], :]
-            b = v[f[:, e2], :]
-            c = v[f[:, e3], :]
-            u = b - a
-            v = c - a
-            cot = np.sum(u * v, axis=1) / np.linalg.norm(np.cross(u, v), axis=1)
-            weights = np.append(weights, 0.5 * cot)
-            rows = np.append(rows, f[:, e2])
-            cols = np.append(cols, f[:, e3])
-            weights = np.append(weights, 0.5 * cot)
-            rows = np.append(rows, f[:, e3])
-            cols = np.append(cols, f[:, e2])
-        cot_mat = csr_matrix((weights, (rows, cols)), shape=(num_vertices, num_vertices))
+        a = v[f[:, 0], :]
+        b = v[f[:, 1], :]
+        c = v[f[:, 2], :]
+        dot_prod = np.array([np.sum((b - a) * (c - a), axis=1),
+                             np.sum((a - b) * (c - b), axis=1),
+                             np.sum((a - c) * (b - c), axis=1)])
+        cross_prod_norm = np.array([np.linalg.norm(np.cross(b - a, c - a), axis=1),
+                                    np.linalg.norm(np.cross(a - b, c - b), axis=1),
+                                    np.linalg.norm(np.cross(a - c, b - c), axis=1)])
+        # cot equals cos/sin
+        cotangent = (dot_prod / cross_prod_norm).flatten()
+        vertex_indices_i = np.array([f[:, 1], f[:, 2], f[:, 0]]).flatten()
+        vertex_indices_j = np.array([f[:, 2], f[:, 0], f[:, 1]]).flatten()
+        # the cotangent matrix is symmetric
+        data = 0.5 * np.concatenate((cotangent, cotangent))
+        rows = np.concatenate((vertex_indices_i, vertex_indices_j))
+        cols = np.concatenate((vertex_indices_j, vertex_indices_i))
+        cot_mat = csr_matrix((data, (rows, cols)), shape=(num_vertices, num_vertices))
         return cot_mat
 
     def weighted_adjacency(self, cls='half_cotangent'):
