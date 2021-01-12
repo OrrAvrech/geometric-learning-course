@@ -1,6 +1,6 @@
 from scipy.sparse import csr_matrix, identity, diags
 from scipy.sparse.linalg import eigsh
-from q2.utils import read_mesh, numpy_to_pyvista
+from q2.utils import read_mesh, numpy_to_pyvista, expspace
 import numpy as np
 import pyvista as pv
 from numpy.linalg import norm
@@ -130,6 +130,7 @@ class Mesh:
         obj = numpy_to_pyvista(self.v, self.f)
         pv.set_plot_theme('document')
         surf_plotter = pv.Plotter()
+        surf_plotter.link_views()
         surf_plotter.add_mesh(obj, scalars=scalar_func, cmap='jet')
         return surf_plotter
 
@@ -201,3 +202,34 @@ class Mesh:
         eig_val = np.round(eig_val, decimals=12)
         eig_vec = np.round(eig_vec, decimals=12)
         return eig_val, eig_vec
+
+    def get_signed_mean_curvature(self, cls='half_cotangent', clip_values=(10, 90)):
+        laplacian = self.laplacian(cls=cls)
+        mean_curvature_normal = 0.5 * laplacian * self.v / self.get_barycentric_vertex_areas()[:, None]
+        unsigned_mean_curvature = np.linalg.norm(mean_curvature_normal, axis=1)
+        # clipping mean curvature unsigned values
+        if clip_values:
+            min_clip, max_clip = clip_values
+            unsigned_mean_curvature = np.clip(unsigned_mean_curvature,
+                                              a_min=np.percentile(unsigned_mean_curvature, min_clip),
+                                              a_max=np.percentile(unsigned_mean_curvature, max_clip))
+        vertex_normals = self.get_vertex_normals()
+        signed_mean_curvature = unsigned_mean_curvature * np.sign(np.sum(vertex_normals*mean_curvature_normal, axis=1))
+        return signed_mean_curvature
+
+    def shape_dna_signature(self, k, cls='half_cotangent'):
+        eig_values, _ = self.laplacian_spectrum(k=k + 1, cls=cls)
+        sig = eig_values[1:]
+        return sig
+
+    def global_point_signature(self, k, cls='half_cotangent'):
+        eig_values, eig_functions = self.laplacian_spectrum(k=k + 1, cls=cls)
+        sig = (eig_functions[:, 1:] / eig_values[None, 1:]).flatten()
+        return sig
+
+    def heat_kernel_signature(self, k, start, stop, n=10, cls='half_cotangent'):
+        eig_values, eig_functions = self.laplacian_spectrum(k=k, cls=cls)
+        exp_time_vec = expspace(start, stop, n)
+        filters = (exp_time_vec ** (-eig_values[:, None])).T
+        sig_time_vec = np.sum(filters[:, None, :] * eig_functions ** 2, axis=-1)
+        return sig_time_vec
