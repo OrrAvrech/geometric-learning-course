@@ -23,7 +23,7 @@ def numpy_to_pyvista(v, f=None):
 def save_fig(img, file_path):
     plt.imshow(img)
     plt.axis('off')
-    plt.savefig(file_path)
+    plt.savefig(file_path, dpi=300)
 
 
 def expspace(start, stop, n):

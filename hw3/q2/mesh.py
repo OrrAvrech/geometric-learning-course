@@ -230,6 +230,6 @@ class Mesh:
     def heat_kernel_signature(self, k, start, stop, n=10, cls='half_cotangent'):
         eig_values, eig_functions = self.laplacian_spectrum(k=k, cls=cls)
         exp_time_vec = expspace(start, stop, n)
-        filters = (exp_time_vec ** (-eig_values[:, None])).T
+        filters = (exp_time_vec ** (eig_values[:, None])).T
         sig_time_vec = np.sum(filters[:, None, :] * eig_functions ** 2, axis=-1)
         return sig_time_vec
