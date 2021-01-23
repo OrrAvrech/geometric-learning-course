@@ -9,3 +9,4 @@ FAUST/
 __pycache__
 *.png
 *.pdf
+*npy
