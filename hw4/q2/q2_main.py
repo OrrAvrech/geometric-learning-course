@@ -1,7 +1,5 @@
 import os
-from scipy import sparse
 from sklearn.cluster import KMeans
-from sklearn.metrics import pairwise_distances
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,11 +7,11 @@ SEED = 0
 np.random.seed(SEED)
 
 
-def plot_3d(data, clusters=None, plot=False):
+def plot_3d(data, clusters=None, show=False):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(data[:, 0], data[:, 1], data[:, 2], c=clusters)
-    if plot:
+    if show:
         plt.show()
 
 
@@ -57,10 +55,10 @@ def main():
     k_means = KMeans(n_clusters=k)
     euc_cluster_indices = k_means.fit_predict(ring_2_np)
     plot_3d(ring_2_np, euc_cluster_indices)
-    spectral_embedding = spectral_clustering(ring_2_np, k=k)
+    spectral_embedding = spectral_clustering(ring_2_np, k=k, sigma=0.05)
     spectral_cluster_indices = k_means.fit_predict(spectral_embedding)
     plot_3d(ring_2_np, spectral_cluster_indices)
-    norm_spectral_embedding = spectral_clustering(ring_2_np, k=k, normalized=True)
+    norm_spectral_embedding = spectral_clustering(ring_2_np, k=k, sigma=0.05, normalized=True)
     norm_spectral_cluster_indices = k_means.fit_predict(norm_spectral_embedding)
     plot_3d(ring_2_np, norm_spectral_cluster_indices)
 
